@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#04050b" />
+  <title>NEON BREACH // Sector 07</title>
+  <link rel="stylesheet" href="assets/fonts/fonts.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas" aria-label="Neon Breach game viewport"></canvas>
+    <div class="screen-fx" aria-hidden="true">
+      <div class="scanlines"></div>
+      <div class="screen-vignette"></div>
+      <div class="damage-vignette" id="damage-vignette"></div>
+      <div class="low-health-pulse" id="low-health-pulse"></div>
+      <div class="chromatic-edge"></div>
+    </div>
+
+    <!-- ───────────────────────── HUD ───────────────────────── -->
+    <div id="hud" class="hud is-hidden" aria-hidden="true">
+      <div class="hud-top">
+        <div class="brand-mini">
+          <div class="brand-sigil"><span></span><span></span><span></span></div>
+          <div class="brand-copy">
+            <b>NEON BREACH</b>
+            <span>SECTOR 07 <i>//</i> LIVE FEED</span>
+          </div>
+        </div>
+
+        <div class="wave-module">
+          <span class="micro-label">THREAT WAVE</span>
+          <div class="wave-line">
+            <em id="wave-prefix">WAVE</em>
+            <b id="wave-num">01</b>
+            <div class="wave-ticks" id="wave-ticks" aria-hidden="true"></div>
+          </div>
+          <span class="wave-sub" id="wave-state">SCANNING FOR HOSTILES</span>
+        </div>
+
+        <div class="hud-top-right">
+          <div class="score-stack">
+            <span class="micro-label">COMBAT SCORE</span>
+            <b id="score">000000</b>
+            <div class="combo" id="combo"><span>CHAIN</span> <b>x1.0</b><i></i></div>
+          </div>
+          <div class="radar-wrap">
+            <canvas id="radar" width="200" height="200" aria-label="Tactical radar"></canvas>
+            <span class="radar-label">TAC-SCAN</span>
+            <i class="radar-sweep"></i>
+          </div>
+        </div>
+      </div>
+
+      <div id="kill-feed" class="kill-feed" aria-live="polite"></div>
+
+      <div id="center-alert" class="center-alert" aria-live="polite">
+        <span id="alert-kicker">INCOMING</span>
+        <strong id="alert-title">WAVE 01</strong>
+        <small id="alert-sub">THE GRID IS COMPROMISED</small>
+      </div>
+
+      <div id="objective" class="objective-chip">
+        <span class="objective-dot"></span>
+        <b id="objective-text">ELIMINATE ALL HOSTILES</b>
+      </div>
+
+      <div id="crosshair" class="crosshair">
+        <div class="ch ch-t"></div>
+        <div class="ch ch-r"></div>
+        <div class="ch ch-b"></div>
+        <div class="ch ch-l"></div>
+        <div class="ch-dot"></div>
+        <div class="ch-ring"></div>
+        <div id="hitmarker" class="hitmarker"><i></i><i></i><i></i><i></i></div>
+      </div>
+
+      <div id="reload-hint" class="reload-hint"><kbd>R</kbd><span>RELOAD</span></div>
+      <div id="damage-arc" class="damage-arc"></div>
+
+      <div class="hud-bottom">
+        <div class="vitals-panel">
+          <div class="vitals-head">
+            <span class="operator-tag"><i></i> VX-07 OPERATOR</span>
+            <span class="shield-readout"><b id="shield">50</b> SHIELD</span>
+          </div>
+          <div class="shield-track"><i id="shield-bar"></i><span></span></div>
+          <div class="health-row">
+            <div class="health-number"><span>+</span><b id="hp">100</b></div>
+            <div class="health-meta">
+              <span class="micro-label">VITAL INTEGRITY</span>
+              <div class="health-track"><i id="hp-bar"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="combat-hints">
+          <span><kbd>WASD</kbd> MOVE</span>
+          <span><kbd>SHIFT</kbd> SPRINT</span>
+          <span><kbd>SPACE</kbd> JUMP</span>
+          <span><kbd>RMB</kbd> AIM</span>
+        </div>
+
+        <div class="weapon-panel">
+          <div class="weapon-topline">
+            <span class="weapon-mode" id="weapon-mode">PULSE / AUTO</span>
+            <span class="weapon-serial">VX-9</span>
+          </div>
+          <div class="ammo-row">
+            <b id="mag">30</b>
+            <span class="ammo-divider">/</span>
+            <span id="reserve">210</span>
+          </div>
+          <div class="reload-track"><i id="reload-bar"></i></div>
+          <div class="weapon-name">PULSE RIFLE <span>MK.IV</span></div>
+        </div>
+      </div>
+
+      <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+      <div id="damage-numbers" class="damage-numbers" aria-hidden="true"></div>
+    </div>
+
+    <!-- ───────────────────────── MAIN MENU ───────────────────────── -->
+    <div id="menu" class="overlay menu-overlay">
+      <div class="menu-grid" aria-hidden="true"></div>
+      <header class="menu-header">
+        <div class="omni-mark">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2 37 11.5v17L20 38 3 28.5v-17L20 2Z"/><path d="M20 9 31 15.4v9.2L20 31l-11-6.4v-9.2L20 9Z"/><circle cx="20" cy="20" r="3.5"/></svg>
+          <div><b>OMNICORP</b><span>TACTICAL SIMULATION DIVISION</span></div>
+        </div>
+        <div class="menu-header-right">
+          <span class="live-dot"></span>
+          <span>COMBAT FEED <b>ONLINE</b></span>
+          <button id="sound-btn" class="icon-btn" aria-label="Toggle sound" title="Toggle sound">
+            <svg class="sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="M16 8c1.2 1.1 1.2 6.9 0 8M19 5.5c2.5 2.3 2.5 10.7 0 13"/></svg>
+            <svg class="sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path d="m16 9 5 6m0-6-5 6"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="menu-main">
+        <div class="eyebrow"><span class="eyebrow-line"></span> SECTOR 07 / CONTAINMENT FAILED</div>
+        <h1 class="game-title">
+          <span class="title-line line-one" data-text="NEON">NEON</span>
+          <span class="title-line line-two" data-text="BREACH">BREACH</span>
+        </h1>
+        <p class="menu-tagline">The grid is overrun. You are the last pulse between<br class="desktop-only" /> the swarm and the core.</p>
+
+        <div class="menu-actions">
+          <button id="play-btn" class="primary-btn">
+            <span class="btn-corner tl"></span><span class="btn-corner br"></span>
+            <span class="play-icon"><svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></svg></span>
+            <span class="play-copy"><b>INITIALIZE RUN</b><small>ENTER THE BREACH</small></span>
+            <span class="btn-arrow">↗</span>
+          </button>
+          <div class="menu-meta">
+            <span><b>ENDLESS</b> SURVIVAL</span>
+            <span><b id="best-score">000000</b> BEST SCORE</span>
+          </div>
+        </div>
+
+        <div class="controls-deck">
+          <div class="control-item"><span class="key-cluster"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span><b>MOVE</b><small>traverse the arena</small></span></div>
+          <div class="control-item"><span class="mouse-icon"><i></i></span><span><b>AIM / FIRE</b><small>mouse + left click</small></span></div>
+          <div class="control-item"><span class="key-cluster"><kbd>R</kbd><kbd>⇧</kbd></span><span><b>RELOAD / SPRINT</b><small>stay in the fight</small></span></div>
+          <div class="control-item"><span class="key-cluster"><kbd>␣</kbd><kbd>RMB</kbd></span><span><b>JUMP / AIM</b><small>break their line</small></span></div>
+        </div>
+      </main>
+
+      <footer class="menu-footer">
+        <div class="system-status"><span class="status-bars"><i></i><i></i><i></i><i></i><i></i></span> SIMULATION READY <em>//</em> BUILD 1.0.7</div>
+        <div class="footer-note">AUDIO RECOMMENDED <span>◈</span> POINTER LOCK REQUIRED</div>
+      </footer>
+      <div class="menu-side-label" aria-hidden="true">BREACH PROTOCOL <b>//</b> 07</div>
+    </div>
+
+    <!-- ───────────────────────── PAUSE ───────────────────────── -->
+    <div id="pause" class="overlay pause-overlay is-hidden">
+      <div class="pause-panel">
+        <span class="panel-kicker">SIMULATION HALTED</span>
+        <h2>PAUSED</h2>
+        <p>Combat feed suspended. The swarm is holding its breath.</p>
+        <div class="pause-actions">
+          <button id="resume-btn" class="primary-btn compact"><span class="play-icon"><svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></svg></span><span class="play-copy"><b>RESUME RUN</b><small>RE-ENGAGE</small></span><span class="btn-arrow">↗</span></button>
+          <button id="quit-btn" class="ghost-btn">ABANDON RUN</button>
+        </div>
+        <div class="pause-stats">
+          <span>WAVE <b id="pause-wave">01</b></span>
+          <span>SCORE <b id="pause-score">000000</b></span>
+          <span>KILLS <b id="pause-kills">0</b></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────────────────── GAME OVER ───────────────────────── -->
+    <div id="gameover" class="overlay gameover-overlay is-hidden">
+      <div class="gameover-panel">
+        <span class="panel-kicker danger">OPERATOR SIGNAL LOST</span>
+        <h2>SIGNAL<br /><span>LOST</span></h2>
+        <p>The swarm has breached the core. Your combat record has been archived.</p>
+        <div class="result-grid">
+          <div><span>FINAL SCORE</span><b id="final-score">0</b></div>
+          <div><span>WAVE REACHED</span><b id="final-wave">1</b></div>
+          <div><span>HOSTILES DOWN</span><b id="final-kills">0</b></div>
+          <div><span>ACCURACY</span><b id="final-accuracy">0%</b></div>
+        </div>
+        <div class="best-line" id="new-best" hidden>NEW PERSONAL BEST <span>◈</span></div>
+        <div class="gameover-actions">
+          <button id="restart-btn" class="primary-btn compact"><span class="play-icon"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 6.5M20 5v6h-6"/></svg></span><span class="play-copy"><b>REDEPLOY</b><small>ONE MORE RUN</small></span><span class="btn-arrow">↗</span></button>
+          <button id="menu-btn" class="ghost-btn">RETURN TO MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────────────────────── MOBILE CONTROLS ───────────────────────── -->
+    <div id="touch-controls" class="touch-controls is-hidden">
+      <div id="stick-zone" class="stick-zone">
+        <div class="stick-base"><div class="stick-rings"></div><div id="stick-thumb" class="stick-thumb"></div></div>
+      </div>
+      <div id="touch-look" class="touch-look"></div>
+      <button id="touch-fire" class="touch-btn fire-btn" aria-label="Fire"><span></span><b>FIRE</b></button>
+      <button id="touch-reload" class="touch-btn small-btn" aria-label="Reload">R</button>
+      <button id="touch-jump" class="touch-btn small-btn" aria-label="Jump">↑</button>
+      <button id="touch-ads" class="touch-btn small-btn" aria-label="Aim">◎</button>
+      <button id="touch-pause" class="touch-btn small-btn" aria-label="Pause">Ⅱ</button>
+    </div>
+
+    <div id="rotate-hint" class="rotate-hint is-hidden">
+      <span>↻</span>
+      <b>ROTATE DEVICE</b>
+      <small>LANDSCAPE RECOMMENDED</small>
+    </div>
+
+    <div id="loading" class="loading-screen">
+      <div class="loader-mark"><i></i><i></i><i></i></div>
+      <span>ESTABLISHING UPLINK</span>
+      <div class="loader-track"><i></i></div>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>
